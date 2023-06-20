@@ -1,5 +1,6 @@
 import express, { response } from 'express';
 import { Request, Response } from 'express';
+import cors from 'cors';
 import morgan from 'morgan';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -7,6 +8,7 @@ const app = express();
 const port = 3001;
 
 app.use(express.json());
+app.use(cors());
 
 let persons = [
   { 
@@ -26,7 +28,7 @@ let persons = [
   },
   { 
     "name": "Mary Poppendieck", 
-    "number": "39-23-6423122",
+    "number": "39-23-6423125",
     "id": '6b1cf382-fe8a-450c-8f93-850ef2a60cbb'
   }
 ]
@@ -109,6 +111,7 @@ const unknownEndpoint = (req: Request, res: Response): void => {
 
 app.use(unknownEndpoint);
 
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
+const PORT = process.env.PORT || 3001
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`)
+})
