@@ -5,7 +5,12 @@
   "license": "MIT",
   "scripts": {
     "start": "ts-node src/index.ts",
-    "dev": "nodemon src/index.ts"
+    "dev": "nodemon src/index.ts",
+
+    "build:ui": "rm -rf dist && cd ../fullstackopen-part2-server/phonebook && yarn build && cp -r dist ../../fullstackopen-part3-node_express",
+    "deploy": "git push heroku main",
+    "deploy:full": "yarn build:ui && git add . && git commit -m uibuild && yarn deploy",    
+    "logs:prod": "heroku logs --tail"
   },
   "dependencies": {
     "@types/cors": "^2.8.13",
