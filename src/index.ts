@@ -14,29 +14,6 @@ app.use(express.static('dist'));
 app.use(express.json());
 app.use(cors());
 
-/* let persons = [
-  { 
-    "name": "Arto Hellas", 
-    "number": "040-123456",
-    "id": 'afc292bc-33b4-4c40-83c6-087ba58dba09'
-  },
-  { 
-    "name": "Ada Lovelace", 
-    "number": "39-44-5323523",
-    "id": '4234676d-eba7-4e04-860c-5c239cb33383'
-  },
-  { 
-    "name": "Dan Abramov", 
-    "number": "12-43-234345",
-    "id": 'f11b4407-8180-4d85-8dbc-f477616b66f3'
-  },
-  { 
-    "name": "Mary Poppendieck", 
-    "number": "39-23-6423125",
-    "id": '6b1cf382-fe8a-450c-8f93-850ef2a60cbb'
-  }
-] */
-
 morgan.token('body', (req: Request, res: Response) => (
   req.method === 'POST'? JSON.stringify(req.body): '')
 );
