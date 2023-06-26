@@ -1,17 +1,20 @@
-import express, { response } from 'express';
-import { Request, Response } from 'express';
+import dotenv from 'dotenv';
+dotenv.config();
+
+import express from 'express';
+import { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-import { v4 as uuidv4 } from 'uuid';
+import Person from './models/person';
 
 const app = express();
-const port = 3001;
+const port = process.env.PORT;
 
-app.use(express.json());
 app.use(express.static('dist'));
+app.use(express.json());
 app.use(cors());
 
-let persons = [
+/* let persons = [
   { 
     "name": "Arto Hellas", 
     "number": "040-123456",
@@ -32,7 +35,7 @@ let persons = [
     "number": "39-23-6423125",
     "id": '6b1cf382-fe8a-450c-8f93-850ef2a60cbb'
   }
-]
+] */
 
 morgan.token('body', (req: Request, res: Response) => (
   req.method === 'POST'? JSON.stringify(req.body): '')
@@ -53,27 +56,35 @@ app.get('/api', (req, res) => {
 });
 
 app.get('/api/info', (req, res) => {
-  res.send(`<p>Phonebook has info for ${persons.length} people(s)</p>
+  Person.find({}).then(persons => {
+    res.send(`<p>Phonebook has info for ${persons.length} people(s)</p>
 
-  <p>${new Date()}</p>`);
+      <p>${new Date()}</p>`);
+  });
 });
 
 app.get('/api/persons', (req, res) => {
-  res.json(persons);
+  Person.find({}).then(persons => {
+    res.json(persons);
+  });
 });
 
-app.get('/api/persons/:personId', (req, res) => {
+app.get('/api/persons/:personId', (req, res, next) => {
   const personId = req.params.personId;
-  const person = persons.find(p => p.id === personId);
 
-  if (person) {
-    res.json(person);
-  } else {
-    res.status(404).json({status: 404, message: 'person not found'});
-  }
+  Person.findById(personId)
+  .then(person => {
+    if (person) {
+      res.json(person)
+    } else {
+      res.status(404).json({status: 404, message: 'person not found'});
+    }
+  }).catch(error => {
+    next(error);
+  });
 });
 
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', (req, res, next) => {
   const newPerson = req.body;
   
   // Validate newPerson
@@ -81,29 +92,50 @@ app.post('/api/persons', (req, res) => {
     return res.status(400).json({status: 400, message: 'Name and number are required'});
   }
 
-  const personExists = persons.find(p => p.name === newPerson.name);
-  if (personExists) {
-    return res.status(409).json({status: 409, message: 'Person already exists'});
-  }
-
-  // Add id to new person and add it to the array
-  const personWithId = {...newPerson, id: uuidv4() };
-  persons.push(personWithId);
-
-  // Respond with the added person
-  res.status(201).json(personWithId);
+  Person.find({name: newPerson.name}).then(persons => {
+    if (persons.length) {
+      console.log(persons);
+      return res.status(409).json({status: 409, message: 'Person already exists'});
+    }
+  
+    // Add id to new person and add it to the array
+    const personOnDB = new Person({...newPerson});
+  
+    personOnDB.save()
+    .then(savedPerson => {
+      res.json(savedPerson);
+    }).catch(error => {
+      next(error);
+    });
+  }).catch(error => {
+    next(error);
+  });
 });
 
-app.delete('/api/persons/:personId', (req, res) => {
-  const personId = req.params.personId;
-  const deletedPerson = persons.find(p => p.id === personId);
+app.put('/api/persons/:id', (req, res, next) => {
+  const dataToUpdate = req.body;
 
-  if (deletedPerson) {
-    persons = persons.filter(p => p.id !== personId);
-    res.json({status: 200, message: 'Person deleted successfully', person: deletedPerson}, );
-  } else {
-    res.status(404).json({status: 404, message: 'Person not found'});
-  }
+  Person
+  .findByIdAndUpdate(req.params.id, dataToUpdate, { new: true })
+  .then(updatedPerson => { res.json(updatedPerson) })
+  .catch(error => next(error));
+});
+
+app.delete('/api/persons/:personId', (req, res, next) => {
+  const personId = req.params.personId;
+
+  Person.findByIdAndRemove(personId)
+  .then(result => {
+    if (result) {
+      res.json({ status: 204, message: 'Person deleted successfully' });
+    } else {
+      const error = new Error('Person not found');
+      error.name = 'DeleteError';
+      throw error;
+    }
+  }).catch(error => {
+    next(error);
+  });
 });
 
 const unknownEndpoint = (req: Request, res: Response): void => {
@@ -112,7 +144,20 @@ const unknownEndpoint = (req: Request, res: Response): void => {
 
 app.use(unknownEndpoint);
 
+const errorHandler = (error: Error, req: Request, res: Response, next: NextFunction): void => {
+  console.error(error);
+  if (error.name === 'CastError') {
+    res.status(400).json({ status: 400, error: 'malformatted id' });
+  } else if (error.name === 'DeleteError') {
+    res.status(404).json({status: 404, error: 'Person not found'});
+  } else {
+    next(error);
+  };
+};
+
+app.use(errorHandler);
+
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
-})
+});
