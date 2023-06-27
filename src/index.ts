@@ -68,32 +68,24 @@ app.post('/api/persons', (req, res, next) => {
   if (!newPerson.name || !newPerson.number) {
     return res.status(400).json({status: 400, message: 'Name and number are required'});
   }
-
-  Person.find({name: newPerson.name}).then(persons => {
-    if (persons.length) {
-      console.log(persons);
-      return res.status(409).json({status: 409, message: 'Person already exists'});
-    }
-  
     // Add id to new person and add it to the array
     const personOnDB = new Person({...newPerson});
   
     personOnDB.save()
     .then(savedPerson => {
-      res.json(savedPerson);
+      return savedPerson.toJSON();
+    }).then(savedAndFormattedPerson => {
+      res.json(savedAndFormattedPerson);
     }).catch(error => {
       next(error);
     });
-  }).catch(error => {
-    next(error);
-  });
 });
 
 app.put('/api/persons/:id', (req, res, next) => {
   const dataToUpdate = req.body;
 
   Person
-  .findByIdAndUpdate(req.params.id, dataToUpdate, { new: true })
+  .findByIdAndUpdate(req.params.id, dataToUpdate, { new: true, runValidators: true })
   .then(updatedPerson => { res.json(updatedPerson) })
   .catch(error => next(error));
 });
@@ -121,15 +113,17 @@ const unknownEndpoint = (req: Request, res: Response): void => {
 
 app.use(unknownEndpoint);
 
-const errorHandler = (error: Error, req: Request, res: Response, next: NextFunction): void => {
-  console.error(error);
+const errorHandler = (error: Error, req: Request, res: Response, next: NextFunction): any => {
+  console.error(`${error.name}:
+  ${error.message}`);
   if (error.name === 'CastError') {
-    res.status(400).json({ status: 400, error: 'malformatted id' });
+    return res.status(400).json({ status: 400, error: 'malformatted id' });
   } else if (error.name === 'DeleteError') {
-    res.status(404).json({status: 404, error: 'Person not found'});
-  } else {
-    next(error);
+    return res.status(404).json({ status: 404, error: 'Person not found' });
+  } else if (error.name === 'ValidationError') {
+    return res.status(400).json({ status: 400, error: error.message });
   };
+  next(error);
 };
 
 app.use(errorHandler);
