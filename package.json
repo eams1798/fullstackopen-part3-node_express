@@ -9,7 +9,8 @@
     "build:ui": "rm -rf dist && cd ../fullstackopen-part2-server/phonebook && yarn build && cp -r dist ../../fullstackopen-part3-node_express",
     "deploy": "git push heroku main",
     "deploy:full": "yarn build:ui && git add . && git commit -m uibuild && yarn deploy",
-    "logs:prod": "heroku logs --tail"
+    "logs:prod": "heroku logs --tail",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@types/cors": "^2.8.13",
@@ -31,6 +32,10 @@
     "uuid": "^9.0.0"
   },
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.60.1",
+    "@typescript-eslint/parser": "^5.60.1",
+    "eslint": "^8.43.0",
+    "eslint-plugin-react": "^7.32.2",
     "nodemon": "^2.0.22"
   }
 }

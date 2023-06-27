@@ -20,7 +20,7 @@ if (process.argv.length < 3) {
   });
   const Person = model<IPerson>("Person", personSchema);
   const password: string = process.argv[2];
-  const url: string = `mongodb+srv://eams1798:${encodeURIComponent(password)}@eamsmdbcluster.x0cqryh.mongodb.net/persons`;
+  const url = `mongodb+srv://eams1798:${encodeURIComponent(password)}@eamsmdbcluster.x0cqryh.mongodb.net/persons`;
   connect(url);
   if (process.argv.length === 3) {
     Person.find({}).then(persons => {
@@ -40,7 +40,7 @@ if (process.argv.length < 3) {
       name: personName,
       number: personNumber
     });
-    newPerson.save().then(_res_ => {
+    newPerson.save().then(() /* (response) */ => {
       console.log(`added ${personName} number ${personNumber} to phonebook`);
       mongoose.connection.close();
     }).catch(err => {
